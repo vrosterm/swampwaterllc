@@ -11,9 +11,7 @@ router = APIRouter(
 )
 
 with db.engine.begin() as connection:
-    result = connection.execute(sqlalchemy.text("SELECT * FROM global_inventory"))
-    for row in result:
-        print(row)
+    result = connection.execute(sqlalchemy.text(sql_to_execute))
 
 class Barrel(BaseModel):
     sku: str
