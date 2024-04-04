@@ -1,12 +1,19 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from src.api import auth
+import sqlalchemy
+from src import database as db
 
 router = APIRouter(
     prefix="/barrels",
     tags=["barrels"],
     dependencies=[Depends(auth.get_api_key)],
 )
+
+with db.engine.begin() as connection:
+    result = connection.execute(sqlalchemy.text("SELECT * FROM global_inventory"))
+    for row in result:
+        print(row)
 
 class Barrel(BaseModel):
     sku: str
