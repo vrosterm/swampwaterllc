@@ -10,9 +10,6 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
-with db.engine.begin() as connection:
-    result = connection.execute(sqlalchemy.text(sql_to_execute))
-
 class Barrel(BaseModel):
     sku: str
 
@@ -30,15 +27,22 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     return "OK"
 
 # Gets called once a day
+# Used to set purchase logic 
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
+    quantity = 0
+    with db.engine.begin() as connection:
+        inv_count = connection.execute(sqlalchemy.text("SELECT num_green_potions from global_inventory")).scalar_one()
+    if inv_count < 10:
+        quantity = 1
+    
     print(wholesale_catalog)
 
     return [
         {
-            "sku": "SMALL_RED_BARREL",
-            "quantity": 1,
+            "sku": "SMALL_GREEN_BARREL",
+            "quantity": quantity,
         }
     ]
 

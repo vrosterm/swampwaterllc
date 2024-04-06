@@ -11,9 +11,6 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
-with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text(sql_to_execute))
-
 class search_sort_options(str, Enum):
     customer_name = "customer_name"
     item_sku = "item_sku"

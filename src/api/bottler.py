@@ -11,16 +11,12 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
-with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text(sql_to_execute))
-
 class PotionInventory(BaseModel):
     potion_type: list[int]
     quantity: int
 
 @router.post("/deliver/{order_id}")
 def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int):
-    """ """
     print(f"potions delievered: {potions_delivered} order_id: {order_id}")
 
     return "OK"
@@ -36,11 +32,11 @@ def get_bottle_plan():
     # Expressed in integers from 1 to 100 that must sum up to 100.
 
     # Initial logic: bottle all barrels into red potions.
-
+    num_bottles_to_make = 5
     return [
             {
                 "potion_type": [100, 0, 0, 0],
-                "quantity": 5,
+                "quantity": num_bottles_to_make,
             }
         ]
 
