@@ -22,7 +22,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
         ml_current = connection.execute(sqlalchemy.text("SELECT num_green_ml from global_inventory")).scalar_one()
         ml_potions = potions_delivered[0].quantity * 100
         connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_ml = {}".format(ml_current - ml_potions)))
-        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_potion = {}".format(ml_current/100)))
+        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_potions = {}".format(ml_current/100)))
 
     return "OK"
 
