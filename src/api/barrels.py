@@ -23,7 +23,7 @@ class Barrel(BaseModel):
 def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     """ """
     with db.engine.begin() as connection:
-        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_potions = {}".format(barrels_delivered[0].ml_per_barrel)))
+        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_ml = {}".format(barrels_delivered[0].ml_per_barrel)))
         connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = {}".format(barrels_delivered[0].price)))
 
     print(f"barrels delievered: {barrels_delivered} order_id: {order_id}")
