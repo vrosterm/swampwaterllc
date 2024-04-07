@@ -41,15 +41,15 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         gold_count = connection.execute(sqlalchemy.text("SELECT gold from global_inventory")).scalar_one()
 
 
-    if inv_count < 10 and gold_count > 100:
+    if inv_count < 10 and gold_count >= 100:
         return [
         {
             "sku": "SMALL_GREEN_BARREL",
             "quantity": 1, 
         }
     ]
-    else:
-        return
+    return
+
         
     
 
