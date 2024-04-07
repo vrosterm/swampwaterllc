@@ -98,7 +98,9 @@ class CartItem(BaseModel):
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
     with db.engine.begin() as connection:
-        CartItem.quantity = connection.execute(sqlalchemy.text("SELECT num_green_potions from global_inventory")).scalar_one()
+        num_potions = connection.execute(sqlalchemy.text("SELECT num_green_potions from global_inventory"))
+        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_potions = 0"))
+    cart_item.quantity = num_potions
     return "OK"
 
 
@@ -109,9 +111,7 @@ class CartCheckout(BaseModel):
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
     with db.engine.begin() as connection:
-        potions_sold = connection.execute(sqlalchemy.text("SELECT num_green_potions from global_inventory"))
-        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_potions = 0"))
-        connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = (SELECT gold from global_inventory) + {}".format(60 * potions_sold)))
+        connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = (SELECT gold from global_inventory) + {}".format(cart_checkout.payment)))
 
         
-    return {"total_potions_bought": potions_sold, "total_gold_paid": 60 * potions_sold}
+    return {"total_potions_bought": potions_sold, "total_gold_paid": cart_checkout.payment}
