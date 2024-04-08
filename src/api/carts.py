@@ -83,11 +83,12 @@ def post_visits(visit_id: int, customers: list[Customer]):
 
     return "OK"
 
-
+global_cart_id = 0
 @router.post("/")
 def create_cart(new_cart: Customer):
     """ """
-    return {"cart_id": 1}
+    global_cart_id += 1
+    return {"cart_id": global_cart_id}
 
 
 class CartItem(BaseModel):
