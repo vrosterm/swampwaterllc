@@ -40,12 +40,14 @@ def get_bottle_plan():
     with db.engine.begin() as connection:
         ml_count = connection.execute(sqlalchemy.text("SELECT num_green_ml from global_inventory")).scalar_one()
         num_bottles_to_make = ml_count//100
-    return [
-            {
-                "potion_type": [0, 100, 0, 0],
-                "quantity": num_bottles_to_make,
-            }
-        ]
+    if num_bottles_to_make != 0:
+        return [
+                {
+                    "potion_type": [0, 100, 0, 0],
+                    "quantity": num_bottles_to_make,
+                }
+            ]
+    return [{}]
 
 if __name__ == "__main__":
     print(get_bottle_plan())
