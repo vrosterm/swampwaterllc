@@ -25,7 +25,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     with db.engine.begin() as connection:
 
         current_ml = connection.execute(sqlalchemy.text("SELECT num_green_ml from global_inventory"))
-        current_gold = connection.execute(sqlalchemy.text("SELECT num_green_ml from global_inventory"))
+        current_gold = connection.execute(sqlalchemy.text("SELECT gold from global_inventory"))
 
         for barrel in barrels_delivered: 
             #Add ml, remove gold
