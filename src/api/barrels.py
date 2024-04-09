@@ -23,14 +23,10 @@ class Barrel(BaseModel):
 def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     """ """
     with db.engine.begin() as connection:
-
-        current_ml = connection.execute(sqlalchemy.text("SELECT num_green_ml from global_inventory"))
-        current_gold = connection.execute(sqlalchemy.text("SELECT gold from global_inventory"))
-
         for barrel in barrels_delivered: 
             #Add ml, remove gold
-            connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_ml = {}".format(current_ml + barrel.ml_per_barrel * barrel.quantity)))
-            connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = {}".format(current_gold - barrel.price * barrel.quantity)))
+            connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_ml = (SELECT num_green_ml from global_inventory) + {}".format(barrel.ml_per_barrel * barrel.quantity)))
+            connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = (SELECT gold from global_inventory) - {}".format(barrel.price * barrel.quantity)))
 
     print(f"barrels delievered: {barrels_delivered} order_id: {order_id}")
 
