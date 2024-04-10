@@ -42,7 +42,7 @@ def get_bottle_plan():
     if num_bottles_to_make != 0:
         return [
                 {
-                    "potion_type": "[0, 100, 0, 0]",
+                    "potion_type": [0, 100, 0, 0],
                     "quantity": num_bottles_to_make,
                 }
             ]
