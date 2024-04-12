@@ -17,7 +17,7 @@ def get_catalog():
 
 
     if grn_count != 0:
-        json_str.insert({
+        json_str.append({
                     "sku": "GREEN_POTION_0",
                     "name": "green potion",
                     "quantity": grn_count,
@@ -25,7 +25,7 @@ def get_catalog():
                     "potion_type": [0, 100, 0, 0],
                 })
     if red_count != 0:
-        json_str.insert({
+        json_str.append({
                     "sku": "RED_POTION_0",
                     "name": "red potion",
                     "quantity": red_count,
@@ -33,7 +33,7 @@ def get_catalog():
                     "potion_type": [100, 0, 0, 0],
                 }) 
     if blu_count != 0:
-        json_str.insert({
+        json_str.append({
                     "sku": "BLUE_POTION_0",
                     "name": "blue potion",
                     "quantity": blu_count,

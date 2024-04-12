@@ -53,11 +53,11 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     for barrel in wholesale_catalog:
         if barrel.sku == "SMALL_GREEN_BARREL" and grn_count < 5 and gold_count >= barrel.price:
-            json_str.insert({"sku": "SMALL_GREEN_BARREL","quantity": 1,}) 
+            json_str.append({"sku": "SMALL_GREEN_BARREL","quantity": 1,}) 
         if barrel.sku == "SMALL_RED_BARREL" and red_count < 10 and gold_count >= barrel.price:
-            json_str.insert({"sku": "SMALL_GREEN_BARREL","quantity": 1,}) 
+            json_str.append({"sku": "SMALL_GREEN_BARREL","quantity": 1,}) 
         if barrel.sku == "SMALL_BLUE_BARREL" and blue_count < 10 and gold_count >= barrel.price:
-            json_str.insert({"sku": "SMALL_GREEN_BARREL","quantity": 1,}) 
+            json_str.append({"sku": "SMALL_GREEN_BARREL","quantity": 1,}) 
     
     return json_str
 
