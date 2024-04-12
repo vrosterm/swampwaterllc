@@ -89,13 +89,14 @@ def create_cart(new_cart: Customer):
     """ """
     global global_cart_id
     global_cart_id += 1
+    dict[global_cart_id] = ""
     return {"cart_id": global_cart_id}
 
 
 class CartItem(BaseModel):
     quantity: int
 
-coloration = ""
+dict = {}
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
@@ -104,13 +105,13 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
         match item_sku:
             case "GREEN_POTION_0":
                 cart_item.quantity += connection.execute(sqlalchemy.text("SELECT num_green_potions from global_inventory")) 
-                coloration = "green"
+                dict[cart_id] = "green"
             case "RED_POTION_0":
                 cart_item.quantity += connection.execute(sqlalchemy.text("SELECT num_red_potions from global_inventory")) 
-                coloration = "red"
+                dict[cart_id] = "red"
             case "BLUE_POTION_0":
                 cart_item.quantity += connection.execute(sqlalchemy.text("SELECT num_blue_potions from global_inventory"))     
-                coloration = "blue"
+                dict[cart_id] = "blue"
     return "OK"
 
 
@@ -121,9 +122,8 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
-    global coloration
     with db.engine.begin() as connection:
-        match coloration:
+        match dict[cart_id]:
             case "green":
                 potion_count = connection.execute(sqlalchemy.text("SELECT num_green_potions from global_inventory")).scalar_one()
                 connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = (SELECT gold from global_inventory) + {}".format(potion_count * 40)))
