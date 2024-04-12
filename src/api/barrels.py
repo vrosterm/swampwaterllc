@@ -24,9 +24,14 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     """ """
     with db.engine.begin() as connection:
         for barrel in barrels_delivered: 
-            #Add ml, remove gold
-            connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_ml = (SELECT num_green_ml from global_inventory) + {}".format(barrel.ml_per_barrel * barrel.quantity)))
-            connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = (SELECT gold from global_inventory) - {}".format(barrel.price * barrel.quantity)))
+            connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = (SELECT gold FROM global_inventory) - {}".format(barrel.price)))
+            match barrel.sku:
+                case "SMALL_GREEN_BARREL":
+                    connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_potions = {}".format(barrel.quantity)))
+                case "SMALL_RED_BARREL":
+                    connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_red_potions = {}".format(barrel.quantity)))
+                case "SMALL_BLUE_BARREL":
+                    connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_blue_potions = {}".format(barrel.quantity)))
 
     print(f"barrels delievered: {barrels_delivered} order_id: {order_id}")
 
@@ -37,20 +42,24 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(wholesale_catalog)
+
+    json_str = []
     """ """
     with db.engine.begin() as connection:
-        inv_count = connection.execute(sqlalchemy.text("SELECT num_green_potions from global_inventory")).scalar_one()
+        grn_count = connection.execute(sqlalchemy.text("SELECT num_green_potions from global_inventory")).scalar_one()
+        red_count = connection.execute(sqlalchemy.text("SELECT num_red_potions from global_inventory")).scalar_one()
+        blue_count = connection.execute(sqlalchemy.text("SELECT num_blue_potions from global_inventory")).scalar_one()
         gold_count = connection.execute(sqlalchemy.text("SELECT gold from global_inventory")).scalar_one()
 
     for barrel in wholesale_catalog:
-        if barrel.sku == "SMALL_GREEN_BARREL" and inv_count < 10 and gold_count >= barrel.price:
-            return [
-                {
-                    "sku": "SMALL_GREEN_BARREL",
-                    "quantity": 1, 
-                }
-            ]
-    return []
+        if barrel.sku == "SMALL_GREEN_BARREL" and grn_count < 5 and gold_count >= barrel.price:
+            json_str.insert({"sku": "SMALL_GREEN_BARREL","quantity": 1,}) 
+        if barrel.sku == "SMALL_RED_BARREL" and red_count < 10 and gold_count >= barrel.price:
+            json_str.insert({"sku": "SMALL_GREEN_BARREL","quantity": 1,}) 
+        if barrel.sku == "SMALL_BLUE_BARREL" and blue_count < 10 and gold_count >= barrel.price:
+            json_str.insert({"sku": "SMALL_GREEN_BARREL","quantity": 1,}) 
+    
+    return json_str
 
         
     
