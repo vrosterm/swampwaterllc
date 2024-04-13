@@ -48,7 +48,7 @@ def get_bottle_plan():
         grn_bottle_ct = grn_ml//100
         red_ml = connection.execute(sqlalchemy.text("SELECT num_red_ml from global_inventory")).scalar_one()
         red_bottle_ct = red_ml//100
-        blu_ml = connection.execute(sqlalchemy.text("SELECT num_blu_ml from global_inventory")).scalar_one()
+        blu_ml = connection.execute(sqlalchemy.text("SELECT num_blue_ml from global_inventory")).scalar_one()
         blu_bottle_ct = blu_ml//100
 
     json_str = []
