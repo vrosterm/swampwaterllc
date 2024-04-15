@@ -27,11 +27,11 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
             connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = (SELECT gold FROM global_inventory) - {}".format(barrel.price)))
             match barrel.sku:
                 case "SMALL_GREEN_BARREL":
-                    connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_ml = {}".format(barrel.quantity)))
+                    connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_ml = {}".format(barrel.ml_per_barrel)))
                 case "SMALL_RED_BARREL":
-                    connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_red_ml = {}".format(barrel.quantity)))
+                    connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_red_ml = {}".format(barrel.ml_per_barrel)))
                 case "SMALL_BLUE_BARREL":
-                    connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_blue_ml = {}".format(barrel.quantity)))
+                    connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_blue_ml = {}".format(barrel.ml_per_barrel)))
 
     print(f"barrels delievered: {barrels_delivered} order_id: {order_id}")
 
