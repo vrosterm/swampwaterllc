@@ -56,7 +56,7 @@ def get_bottle_plan():
         json_str.append({"potion_type": [0, 100, 0, 0],"quantity": grn_bottle_ct,})
     if red_bottle_ct != 0:
         json_str.append({"potion_type": [100, 0, 0, 0],"quantity": red_bottle_ct,})
-    if grn_bottle_ct != 0:
+    if blu_bottle_ct != 0:
         json_str.append({"potion_type": [0, 0, 100, 0],"quantity": blu_bottle_ct,})
                 
     return json_str
