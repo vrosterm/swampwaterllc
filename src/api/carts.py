@@ -103,14 +103,11 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     with db.engine.begin() as connection:
         match item_sku:
             case "GREEN_POTION_0":
-                cart_item.quantity += connection.execute(sqlalchemy.text("SELECT num_green_potions from global_inventory")).scalar_one() 
-                dict[cart_id] = "green"
+                dict[cart_id] = ["green", cart_item.quantity]
             case "RED_POTION_0":
-                cart_item.quantity += connection.execute(sqlalchemy.text("SELECT num_red_potions from global_inventory")).scalar_one()
-                dict[cart_id] = "red"
+                dict[cart_id] = ["red", cart_item.quantity]
             case "BLUE_POTION_0":
-                cart_item.quantity += connection.execute(sqlalchemy.text("SELECT num_blue_potions from global_inventory")).scalar_one()  
-                dict[cart_id] = "blue"
+                dict[cart_id] = ["blue", cart_item.quantity]
 
     print(dict)
     return "OK"
@@ -123,20 +120,19 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
+    potion_count = dict[cart_id][1]
     with db.engine.begin() as connection:
-        match dict[cart_id]:
+        match dict[cart_id][0]:
             case "green":
-                potion_count = connection.execute(sqlalchemy.text("SELECT num_green_potions from global_inventory")).scalar_one()
-                connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = (SELECT gold from global_inventory) + {}".format(potion_count * 40)))
-                connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_potions = 0"))
+                connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = (SELECT gold from global_inventory) + {}".format(dict[cart_id][1] * 40)))
+                connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_potions = (SELECT num_green_potions from global_inventory) - {}".format(dict[cart_id][1])))
             case "red":
-                potion_count = connection.execute(sqlalchemy.text("SELECT num_red_potions from global_inventory")).scalar_one()
-                connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = (SELECT gold from global_inventory) + {}".format(potion_count * 40)))
-                connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_red_potions = 0"))
+                connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = (SELECT gold from global_inventory) + {}".format(dict[cart_id][1] * 40)))
+                connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_red_potions = (SELECT num_red_potions from global_inventory) - {}".format(dict[cart_id][1])))
             case "blue":
-                potion_count = connection.execute(sqlalchemy.text("SELECT num_blue_potions from global_inventory")).scalar_one()
-                connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = (SELECT gold from global_inventory) + {}".format(potion_count * 40)))
-                connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_blue_potions = 0"))
+                connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = (SELECT gold from global_inventory) + {}".format(dict[cart_id][1] * 40)))
+                connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_blue_potions = (SELECT num_blue_potions from global_inventory) - {}".format(dict[cart_id][1])))
+
 
 
         
