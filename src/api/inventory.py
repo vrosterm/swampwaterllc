@@ -17,7 +17,7 @@ def get_inventory():
     with db.engine.begin() as connection:
         grn_ml = connection.execute(sqlalchemy.text("SELECT num_green_ml from global_inventory")).scalar_one()
         red_ml = connection.execute(sqlalchemy.text("SELECT num_red_ml from global_inventory")).scalar_one()
-        blu_ml = connection.execute(sqlalchemy.text("SELECT num_red_ml from global_inventory")).scalar_one()
+        blu_ml = connection.execute(sqlalchemy.text("SELECT num_blue_ml from global_inventory")).scalar_one()
         grn_count = connection.execute(sqlalchemy.text("SELECT num_green_potions from global_inventory")).scalar_one()
         red_count = connection.execute(sqlalchemy.text("SELECT num_red_potions from global_inventory")).scalar_one()
         blu_count = connection.execute(sqlalchemy.text("SELECT num_blue_potions from global_inventory")).scalar_one()
