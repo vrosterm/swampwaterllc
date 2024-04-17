@@ -29,7 +29,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                     connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_red_ml = (SELECT num_red_ml from global_inventory) - {}".format(potion.quantity * potion.potion_type[0])))            
                 case [0, 0, 100, 0]:
                     connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_blue_potions = {}".format(potion.quantity)))
-                    connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_blue_ml = (SELECT num_red_ml from global_inventory) - {}".format(potion.quantity * potion.potion_type[2])))     
+                    connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_blue_ml = (SELECT num_blue_ml from global_inventory) - {}".format(potion.quantity * potion.potion_type[2])))     
     return "OK"
 
 @router.post("/plan")
@@ -49,7 +49,7 @@ def get_bottle_plan():
         red_ml = connection.execute(sqlalchemy.text("SELECT num_red_ml from global_inventory")).scalar_one()
         red_bottle_ct = red_ml//100
         blu_ml = connection.execute(sqlalchemy.text("SELECT num_blue_ml from global_inventory")).scalar_one()
-        blu_bottle_ct = blu_ml//100
+        blu_bottle_ct = blu_ml//100                                           
 
     json_str = []
     if grn_bottle_ct != 0:
