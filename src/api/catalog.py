@@ -10,34 +10,20 @@ def get_catalog():
     Each unique item combination must have only a single price.
     """
     with db.engine.begin() as connection:
-        grn_count = connection.execute(sqlalchemy.text("SELECT num_green_potions from global_inventory")).scalar_one()
-        red_count = connection.execute(sqlalchemy.text("SELECT num_red_potions from global_inventory")).scalar_one()
-        blu_count = connection.execute(sqlalchemy.text("SELECT num_blue_potions from global_inventory")).scalar_one()
+        metadata_obj = sqlalchemy.MetaData()
+        potion_inventory = sqlalchemy.Table("potion_inventory", metadata_obj, autoload_with= db.engine) 
+        in_stock = connection.execute(sqlalchemy.select(potion_inventory).where(potion_inventory.c.quantity > 0))
         json_str = []
-
-
-    if grn_count != 0:
+    for row in in_stock:
         json_str.append({
-                    "sku": "GREEN_POTION_0",
-                    "name": "green potion",
-                    "quantity": grn_count,
-                    "price": 40,
-                    "potion_type": [0, 100, 0, 0],
-                })
-    if red_count != 0:
-        json_str.append({
-                    "sku": "RED_POTION_0",
-                    "name": "red potion",
-                    "quantity": red_count,
-                    "price": 40,
-                    "potion_type": [100, 0, 0, 0],
-                }) 
-    if blu_count != 0:
-        json_str.append({
-                    "sku": "BLUE_POTION_0",
-                    "name": "blue potion",
-                    "quantity": blu_count,
-                    "price": 40,
-                    "potion_type": [0, 0, 100, 0],
-                })    
+                    "sku": row.sku,
+                    "name": row.potion_name,
+                    "quantity": row.quantity,
+                    "price": row.price,
+                    "potion_type": [row.red,
+                                    row.green,
+                                    row.blue,
+                                    row.dark]
+                })   
+    print(json_str)
     return json_str

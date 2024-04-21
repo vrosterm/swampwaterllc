@@ -83,33 +83,34 @@ def post_visits(visit_id: int, customers: list[Customer]):
 
     return "OK"
 
-global_cart_id = 0
+
 @router.post("/")
 def create_cart(new_cart: Customer):
     """ """
-    global global_cart_id
-    global_cart_id += 1
-    dict[global_cart_id] = ""
-    return {"cart_id": global_cart_id}
+    metadata_obj = sqlalchemy.MetaData()
+    carts = sqlalchemy.Table("carts", metadata_obj, autoload_with= db.engine) 
+    with db.engine.begin() as connection:
+        connection.execute(sqlalchemy.insert(carts),[
+            {"customer_name": new_cart.customer_name,
+             "customer_class": new_cart.character_class,
+             "level": new_cart.level}
+        ],)
+        return {"cart_id": connection.execute(sqlalchemy.text("SELECT MAX(ID) from carts")).scalar_one()}
 
 
 class CartItem(BaseModel):
     quantity: int
 
-dict = {}
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
     with db.engine.begin() as connection:
-        match item_sku:
-            case "GREEN_POTION_0":
-                dict[cart_id] = ["green", cart_item.quantity]
-            case "RED_POTION_0":
-                dict[cart_id] = ["red", cart_item.quantity]
-            case "BLUE_POTION_0":
-                dict[cart_id] = ["blue", cart_item.quantity]
+        connection.execute(sqlalchemy.text('''
+                                           INSERT INTO cart_items (customer_id, quantity, item_id)
+                                           SELECT :cart_id, :quantity,
+                                           id FROM potion_inventory WHERE sku = :item_sku 
+                                           '''),[{"cart_id": cart_id, "item_sku": item_sku, "quantity": cart_item.quantity}])
 
-    print(dict)
     return "OK"
 
 
@@ -120,20 +121,23 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
-    potion_count = dict[cart_id][1]
+    revenue = 0
+    potion_total = 0
     with db.engine.begin() as connection:
-        match dict[cart_id][0]:
-            case "green":
-                connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = (SELECT gold from global_inventory) + {}".format(dict[cart_id][1] * 40)))
-                connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_potions = (SELECT num_green_potions from global_inventory) - {}".format(dict[cart_id][1])))
-            case "red":
-                connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = (SELECT gold from global_inventory) + {}".format(dict[cart_id][1] * 40)))
-                connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_red_potions = (SELECT num_red_potions from global_inventory) - {}".format(dict[cart_id][1])))
-            case "blue":
-                connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = (SELECT gold from global_inventory) + {}".format(dict[cart_id][1] * 40)))
-                connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_blue_potions = (SELECT num_blue_potions from global_inventory) - {}".format(dict[cart_id][1])))
+        num = connection.execute(sqlalchemy.text('''SELECT cart_items.quantity, price FROM cart_items
+                                                JOIN potion_inventory ON item_id = potion_inventory.id
+                                                WHERE customer_id = :cart_id
+                                                '''),[{"cart_id": cart_id}]).fetchall()
+        for tuple in num:
+            revenue += tuple[0]*tuple[1]
+            potion_total += tuple[0]
+        connection.execute(sqlalchemy.text("""UPDATE material_inventory SET gold = gold + :revenue"""),[{"revenue": revenue}])
+        connection.execute(sqlalchemy.text('''UPDATE potion_inventory SET quantity = potion_inventory.quantity - cart_items.quantity 
+                                           FROM cart_items
+                                           WHERE cart_items.customer_id = :cart_id AND cart_items.item_id = potion_inventory.id'''),[{"cart_id": cart_id}])
+
 
 
 
         
-    return {"total_potions_bought": potion_count, "total_gold_paid": potion_count * 40}
+    return {"total_potions_bought": potion_total, "total_gold_paid": revenue}
