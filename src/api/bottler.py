@@ -64,6 +64,7 @@ def get_bottle_plan():
             })
             ml = [m - p*3 for m, p in zip(ml, quantity_dict["SWAMP_WATER_0"][0])]
             print(ml)
+
         if ml[0] >= 150 and ml[2] >= 150 and quantity_dict["VIOLET_POTION_0"][1] < 3: 
             json.append({
                 "potion_type": quantity_dict["VIOLET_POTION_0"][0],
@@ -71,6 +72,7 @@ def get_bottle_plan():
             })
             ml = [m - p*3 for m, p in zip(ml, quantity_dict["VIOLET_POTION_0"][0])]
             print(ml)
+
         if ml[0] >= 100 and quantity_dict["RED_POTION_0"][1] < 5:
             q = ml[0]//200
             if q > 0:
@@ -80,6 +82,7 @@ def get_bottle_plan():
                 })
             ml = [m - p*q for m, p in zip(ml, quantity_dict["RED_POTION_0"][0])]
             print(ml)
+
         if ml[1] >= 100 and quantity_dict["GREEN_POTION_0"][1] < 5:
             q = ml[1]//200
             if q > 0: 
@@ -89,6 +92,7 @@ def get_bottle_plan():
                 })
             ml = [m - p*q for m, p in zip(ml, quantity_dict["GREEN_POTION_0"][0])]
             print(ml)
+
         if ml[2] >= 100 and quantity_dict["BLUE_POTION_0"][1] < 5:
             q = ml[2]//200
             if q > 0:

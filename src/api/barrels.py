@@ -53,16 +53,16 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         for barrel in wholesale_catalog:
             if barrel.sku == "SMALL_GREEN_BARREL" and ml[0] <= 250 and gold >= barrel.price:
                 print(ml, barrel.sku, barrel.price)
-                json_str.append({"sku": "SMALL_GREEN_BARREL","quantity": 1,}) 
-                connection.execute(sqlalchemy.text("UPDATE material_inventory SET gold = (SELECT gold FROM material_inventory) - :barrel_price"),[{"barrel_price": barrel.price}])
+                json_str.append({"sku": "SMALL_GREEN_BARREL","quantity": 1,})
+                gold -= barrel.price 
             if barrel.sku == "SMALL_RED_BARREL" and ml[1] <= 250 and gold >= barrel.price:
                 print(ml, barrel.sku, barrel.price)
                 json_str.append({"sku": "SMALL_RED_BARREL","quantity": 1,}) 
-                connection.execute(sqlalchemy.text("UPDATE material_inventory SET gold = (SELECT gold FROM material_inventory) - :barrel_price"),[{"barrel_price": barrel.price}])
+                gold -= barrel.price 
             if barrel.sku == "SMALL_BLUE_BARREL" and ml[2] <= 250 and gold >= barrel.price:
                 print(ml, barrel.sku, barrel.price)
                 json_str.append({"sku": "SMALL_BLUE_BARREL","quantity": 1,}) 
-                connection.execute(sqlalchemy.text("UPDATE material_inventory SET gold = (SELECT gold FROM material_inventory) - :barrel_price"),[{"barrel_price": barrel.price}])
+                gold -= barrel.price 
 
     
     return json_str
