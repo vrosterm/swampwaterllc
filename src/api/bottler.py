@@ -28,7 +28,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                 potion_inventory.c.green == potion.potion_type[1] and 
                 potion_inventory.c.blue == potion.potion_type[2] and 
                 potion_inventory.c.dark == potion.potion_type[3] 
-                ).values(quantity = potion.quantity))
+                ).values(quantity = potion_inventory.c.quantity + potion.quantity))
             connection.execute(sqlalchemy.update(material_inventory).values(
                 red_ml = material_inventory.c.red_ml - potion.potion_type[0]*potion.quantity,
                 green_ml = material_inventory.c.green_ml - potion.potion_type[1]*potion.quantity,
