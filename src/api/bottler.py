@@ -51,7 +51,7 @@ def get_bottle_plan():
 
     # Initial logic: bottle all barrels into red potions.
     with db.engine.begin() as connection:
-        ml = connection.execute(sqlalchemy.text("SELECT red_ml, green_ml, blue_ml, dark_ml FROM material_inventory")).all()[0]
+        ml = connection.execute(sqlalchemy.text("SELECT red_ml, green_ml, blue_ml, dark_ml FROM material_inventory")).fetchall()[0]
         quantity_dict = {}
         json = []
         potions = connection.execute(sqlalchemy.select(potion_inventory))
