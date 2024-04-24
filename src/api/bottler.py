@@ -25,9 +25,9 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
         for potion in potions_delivered:
             print(connection.execute(sqlalchemy.text("SELECT sku, quantity FROM potion_inventory")).fetchall())
             connection.execute(sqlalchemy.update(potion_inventory).where(
-                potion_inventory.c.red == potion.potion_type[0] and 
-                potion_inventory.c.green == potion.potion_type[1] and 
-                potion_inventory.c.blue == potion.potion_type[2] and 
+                potion_inventory.c.red == potion.potion_type[0], 
+                potion_inventory.c.green == potion.potion_type[1],
+                potion_inventory.c.blue == potion.potion_type[2], 
                 potion_inventory.c.dark == potion.potion_type[3] 
                 ).values(quantity = potion_inventory.c.quantity + potion.quantity))
             connection.execute(sqlalchemy.update(material_inventory).values(
