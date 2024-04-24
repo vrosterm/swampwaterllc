@@ -128,6 +128,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                                                 JOIN potion_inventory ON item_id = potion_inventory.id
                                                 WHERE customer_id = :cart_id
                                                 '''),[{"cart_id": cart_id}]).fetchall()
+        print(num)
         for tuple in num:
             revenue += tuple[0]*tuple[1]
             potion_total += tuple[0]
