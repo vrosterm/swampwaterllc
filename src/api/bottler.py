@@ -23,6 +23,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
     material_inventory = sqlalchemy.Table("material_inventory", metadata_obj, autoload_with= db.engine) 
     with db.engine.begin() as connection:
         for potion in potions_delivered:
+            print(connection.execute(sqlalchemy.text("SELECT sku, quantity FROM potion_inventory")).fetchall())
             connection.execute(sqlalchemy.update(potion_inventory).where(
                 potion_inventory.c.red == potion.potion_type[0] and 
                 potion_inventory.c.green == potion.potion_type[1] and 
@@ -34,7 +35,6 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                 green_ml = material_inventory.c.green_ml - potion.potion_type[1]*potion.quantity,
                 blue_ml = material_inventory.c.blue_ml - potion.potion_type[2]*potion.quantity,
                 dark_ml = material_inventory.c.dark_ml - potion.potion_type[3]*potion.quantity))
-            print(connection.execute(sqlalchemy.select(material_inventory)).fetchall())
     return "OK"
 
 @router.post("/plan")
@@ -57,22 +57,22 @@ def get_bottle_plan():
         potions = connection.execute(sqlalchemy.select(potion_inventory))
         for row in potions:
             quantity_dict[row.sku] = ([row.red, row.green, row.blue, row.dark], row.quantity) 
+        # Swamp Water
         if ml[0] >= 150 and ml[1] >= 150 and quantity_dict["SWAMP_WATER_0"][1] < 3: 
             json.append({
                 "potion_type": quantity_dict["SWAMP_WATER_0"][0],
                 "quantity": 3
             })
             ml = [m - p*3 for m, p in zip(ml, quantity_dict["SWAMP_WATER_0"][0])]
-            print(ml)
 
+        # Violet
         if ml[0] >= 150 and ml[2] >= 150 and quantity_dict["VIOLET_POTION_0"][1] < 3: 
             json.append({
                 "potion_type": quantity_dict["VIOLET_POTION_0"][0],
                 "quantity": 3
             })
             ml = [m - p*3 for m, p in zip(ml, quantity_dict["VIOLET_POTION_0"][0])]
-            print(ml)
-
+        # Red
         if ml[0] >= 100 and quantity_dict["RED_POTION_0"][1] < 5:
             q = ml[0]//200
             if q > 0:
@@ -81,8 +81,7 @@ def get_bottle_plan():
                     "quantity": q
                 })
             ml = [m - p*q for m, p in zip(ml, quantity_dict["RED_POTION_0"][0])]
-            print(ml)
-
+        # Green
         if ml[1] >= 100 and quantity_dict["GREEN_POTION_0"][1] < 5:
             q = ml[1]//200
             if q > 0: 
@@ -91,8 +90,7 @@ def get_bottle_plan():
                     "quantity": q
                 })
             ml = [m - p*q for m, p in zip(ml, quantity_dict["GREEN_POTION_0"][0])]
-            print(ml)
-
+        # Blue
         if ml[2] >= 100 and quantity_dict["BLUE_POTION_0"][1] < 5:
             q = ml[2]//200
             if q > 0:
@@ -101,7 +99,7 @@ def get_bottle_plan():
                     "quantity": q
                 })
             ml = [m - p*q for m, p in zip(ml, quantity_dict["BLUE_POTION_0"][0])]
-            print(ml)  
+        print(json)
     return json
 
 if __name__ == "__main__":
