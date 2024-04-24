@@ -4,6 +4,9 @@ from pydantic import BaseModel
 from src.api import auth
 import sqlalchemy
 from src import database as db
+metadata_obj = sqlalchemy.MetaData()
+potion_inventory = sqlalchemy.Table("potion_inventory", metadata_obj, autoload_with= db.engine) 
+material_inventory = sqlalchemy.Table("material_inventory", metadata_obj, autoload_with= db.engine) 
 
 router = APIRouter(
     prefix="/bottler",
@@ -18,9 +21,6 @@ class PotionInventory(BaseModel):
 @router.post("/deliver/{order_id}")
 def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int):
     print(f"potions delievered: {potions_delivered} order_id: {order_id}")
-    metadata_obj = sqlalchemy.MetaData()
-    potion_inventory = sqlalchemy.Table("potion_inventory", metadata_obj, autoload_with= db.engine) 
-    material_inventory = sqlalchemy.Table("material_inventory", metadata_obj, autoload_with= db.engine) 
     with db.engine.begin() as connection:
         for potion in potions_delivered:
             print(connection.execute(sqlalchemy.text("SELECT sku, quantity FROM potion_inventory")).fetchall())
