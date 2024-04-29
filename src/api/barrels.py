@@ -24,7 +24,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     """ """
     with db.engine.begin() as connection:
         for barrel in barrels_delivered: 
-            connection.execute(sqlalchemy.text("INSERT INTO gold_ledger (change) VALUES (:total_cost)"),[{"total_cost": barrel.quantity*barrel.price*-1}])
+            connection.execute(sqlalchemy.text("INSERT INTO gold_ledger (change, description) VALUES (:total_cost, :descriptor)"),[{"total_cost": barrel.quantity*barrel.price*-1, "descriptor": f'Bought {barrel.quantity} {barrel.sku}'}])
             match barrel.potion_type: 
                 case [0,1,0,0]:
                     connection.execute(sqlalchemy.text("INSERT INTO ml_ledger (type, change) VALUES ('green', :barrel_ml)"),[{"barrel_ml": barrel.ml_per_barrel}])

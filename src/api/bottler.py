@@ -5,7 +5,6 @@ from src.api import auth
 import sqlalchemy
 from src import database as db
 metadata_obj = sqlalchemy.MetaData()
-potion_inventory = sqlalchemy.Table("potion_inventory", metadata_obj, autoload_with= db.engine) 
 router = APIRouter(
     prefix="/bottler",
     tags=["bottler"],
@@ -29,13 +28,14 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                                                             "blue_ml": potion.potion_type[2],
                                                             "dark_ml": potion.potion_type[3]}]).scalar_one()
             connection.execute(sqlalchemy.text("""
-                                               INSERT INTO potion_ledger (potion_id, change) 
-                                               VALUES(:match , :quantity)"""),[{"quantity": potion.quantity, "match": match}])   
+                                               INSERT INTO potion_ledger (potion_id, change, description) 
+                                               VALUES(:match , :quantity, 'from mix')"""),[{"quantity": potion.quantity, "match": match}])   
             for ml in potion.potion_type:
                 if ml != 0:
+                    color = color_dict[potion.potion_type.index(ml)]
                     connection.execute(sqlalchemy.text("""INSERT INTO ml_ledger (type, change)
                                                     VALUES (:color, :ml_quantity)
-                                                        """),[{"color": color_dict[potion.potion_type.index(ml)], "ml_quantity": ml*potion.quantity*-1}])                                                                      
+                                                        """),[{"color": color, "ml_quantity": ml*potion.quantity*-1}])                                                                      
     return "OK"
 
 @router.post("/plan")

@@ -123,17 +123,19 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
     revenue = 0
     potion_total = 0
+    potion_str = ''
     with db.engine.begin() as connection:
-        potions_bought = connection.execute(sqlalchemy.text("""SELECT COALESCE(SUM(cart_items.quantity),0) AS total, item_id, price 
+        potions_bought = connection.execute(sqlalchemy.text("""SELECT COALESCE(SUM(cart_items.quantity),0) AS total, item_id, price, potion_name 
                                                             FROM cart_items 
                                                             JOIN potion_inventory ON potion_inventory.id = item_id
                                                             WHERE customer_id = :cart_id
-                                                            GROUP BY item_id, price"""),[{"cart_id": cart_id}]).fetchall()
+                                                            GROUP BY item_id, price, potion_name"""),[{"cart_id": cart_id}]).fetchall()
         for potion in potions_bought:
             potion_total += potion.total
             revenue += potion.total * potion.price
-            connection.execute(sqlalchemy.text("""INSERT INTO potion_ledger (potion_id, change) VALUES (:item_id, :total)"""),[{"item_id": potion.item_id, "total": potion.total*-1}])
-        connection.execute(sqlalchemy.text("""INSERT INTO gold_ledger (change) VALUES (:revenue)"""),[{"revenue": revenue}])
+            potion_str += f'{potion.potion_name}, '
+            connection.execute(sqlalchemy.text("""INSERT INTO potion_ledger (potion_id, change, description) VALUES (:item_id, :total, :descriptor)"""),[{"item_id": potion.item_id, "total": potion.total*-1, "descriptor": f'Sold to {cart_id}'}])
+        connection.execute(sqlalchemy.text("""INSERT INTO gold_ledger (change, description) VALUES (:revenue, :description)"""),[{"revenue": revenue, "description": f'Sold {potion_total} of {potion_str}'}])
 
 
 
