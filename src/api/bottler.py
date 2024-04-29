@@ -6,8 +6,6 @@ import sqlalchemy
 from src import database as db
 metadata_obj = sqlalchemy.MetaData()
 potion_inventory = sqlalchemy.Table("potion_inventory", metadata_obj, autoload_with= db.engine) 
-material_inventory = sqlalchemy.Table("material_inventory", metadata_obj, autoload_with= db.engine) 
-
 router = APIRouter(
     prefix="/bottler",
     tags=["bottler"],
@@ -21,20 +19,23 @@ class PotionInventory(BaseModel):
 @router.post("/deliver/{order_id}")
 def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int):
     print(f"potions delievered: {potions_delivered} order_id: {order_id}")
+    color_dict = ['red', 'green', 'blue', 'dark']
     with db.engine.begin() as connection:
         for potion in potions_delivered:
-            print(connection.execute(sqlalchemy.text("SELECT sku, quantity FROM potion_inventory")).fetchall())
-            connection.execute(sqlalchemy.update(potion_inventory).where(
-                potion_inventory.c.red == potion.potion_type[0], 
-                potion_inventory.c.green == potion.potion_type[1],
-                potion_inventory.c.blue == potion.potion_type[2], 
-                potion_inventory.c.dark == potion.potion_type[3] 
-                ).values(quantity = potion_inventory.c.quantity + potion.quantity))
-            connection.execute(sqlalchemy.update(material_inventory).values(
-                red_ml = material_inventory.c.red_ml - potion.potion_type[0]*potion.quantity,
-                green_ml = material_inventory.c.green_ml - potion.potion_type[1]*potion.quantity,
-                blue_ml = material_inventory.c.blue_ml - potion.potion_type[2]*potion.quantity,
-                dark_ml = material_inventory.c.dark_ml - potion.potion_type[3]*potion.quantity))
+            match = connection.execute(sqlalchemy.text(""" SELECT id FROM potion_inventory
+                                                       WHERE red = :red_ml AND green = :green_ml AND blue = :blue_ml AND dark = :dark_ml
+                                                    """),[{"red_ml": potion.potion_type[0],
+                                                            "green_ml": potion.potion_type[1],
+                                                            "blue_ml": potion.potion_type[2],
+                                                            "dark_ml": potion.potion_type[3]}]).scalar_one()
+            connection.execute(sqlalchemy.text("""
+                                               INSERT INTO potion_ledger (potion_id, change) 
+                                               VALUES(:match , :quantity)"""),[{"quantity": potion.quantity, "match": match}])   
+            for ml in potion.potion_type:
+                if ml != 0:
+                    connection.execute(sqlalchemy.text("""INSERT INTO ml_ledger (type, change)
+                                                    VALUES (:color, :ml_quantity)
+                                                        """),[{"color": color_dict[potion.potion_type.index(ml)], "ml_quantity": ml*potion.quantity*-1}])                                                                      
     return "OK"
 
 @router.post("/plan")
@@ -51,12 +52,26 @@ def get_bottle_plan():
 
     # Initial logic: bottle all barrels into red potions.
     with db.engine.begin() as connection:
-        ml = connection.execute(sqlalchemy.text("SELECT red_ml, green_ml, blue_ml, dark_ml FROM material_inventory")).fetchall()[0]
+        db_delta = connection.execute(sqlalchemy.text('''
+                                (SELECT COALESCE(SUM(change), 0) FROM ml_ledger WHERE type = 'red') UNION ALL
+                                (SELECT COALESCE(SUM(change), 0) FROM ml_ledger WHERE type = 'green') UNION ALL
+                                (SELECT COALESCE(SUM(change), 0) FROM ml_ledger WHERE type = 'blue') UNION ALL
+                                (SELECT COALESCE(SUM(change), 0) FROM ml_ledger WHERE type = 'dark')                                
+                                ''')).fetchall()
+        ml = []
+        for color in db_delta:
+            ml.append(color[0])        
         quantity_dict = {}
         json = []
-        potions = connection.execute(sqlalchemy.select(potion_inventory))
+        potions = connection.execute(sqlalchemy.text("""
+                                    SELECT sku, COALESCE(SUM(change),0) AS quantity, red, green, blue, dark
+                                    FROM potion_ledger
+                                    RIGHT JOIN potion_inventory ON potion_ledger.potion_id = potion_inventory.id
+                                    GROUP BY sku, red, green, blue, dark
+                                    """)).fetchall()
         for row in potions:
-            quantity_dict[row.sku] = ([row.red, row.green, row.blue, row.dark], row.quantity) 
+            quantity_dict[row.sku] = ([row.red, row.green, row.blue, row.dark], row.quantity)
+        print(quantity_dict)
         # Swamp Water
         if ml[0] >= 150 and ml[1] >= 150 and quantity_dict["SWAMP_WATER_0"][1] < 3: 
             json.append({
@@ -101,6 +116,5 @@ def get_bottle_plan():
             ml = [m - p*q for m, p in zip(ml, quantity_dict["BLUE_POTION_0"][0])]
         print(json)
     return json
-
 if __name__ == "__main__":
     print(get_bottle_plan())

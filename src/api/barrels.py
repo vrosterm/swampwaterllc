@@ -24,16 +24,16 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     """ """
     with db.engine.begin() as connection:
         for barrel in barrels_delivered: 
-            connection.execute(sqlalchemy.text("UPDATE material_inventory SET gold = material_inventory.gold - :total_cost"),[{"total_cost": barrel.price*barrel.quantity}])
-            match barrel.potion_type:
+            connection.execute(sqlalchemy.text("INSERT INTO gold_ledger (change) VALUES (:total_cost)"),[{"total_cost": barrel.quantity*barrel.price*-1}])
+            match barrel.potion_type: 
                 case [0,1,0,0]:
-                    connection.execute(sqlalchemy.text("UPDATE material_inventory SET green_ml = green_ml + :barrel_ml"),[{"barrel_ml": barrel.ml_per_barrel}])
+                    connection.execute(sqlalchemy.text("INSERT INTO ml_ledger (type, change) VALUES ('green', :barrel_ml)"),[{"barrel_ml": barrel.ml_per_barrel}])
                 case [1,0,0,0]:
-                    connection.execute(sqlalchemy.text("UPDATE material_inventory SET red_ml = red_ml + :barrel_ml"),[{"barrel_ml": barrel.ml_per_barrel}])
+                    connection.execute(sqlalchemy.text("INSERT INTO ml_ledger (type, change) VALUES ('red', :barrel_ml)"),[{"barrel_ml": barrel.ml_per_barrel}])
                 case [0,0,1,0]:
-                    connection.execute(sqlalchemy.text("UPDATE material_inventory SET blue_ml = blue_ml + :barrel_ml"),[{"barrel_ml": barrel.ml_per_barrel}])
+                    connection.execute(sqlalchemy.text("INSERT INTO ml_ledger (type, change) VALUES ('blue', :barrel_ml)"),[{"barrel_ml": barrel.ml_per_barrel}])
                 case [0,0,0,1]:
-                    connection.execute(sqlalchemy.text("UPDATE material_inventory SET dark_ml = dark_ml + :barrel_ml"),[{"barrel_ml": barrel.ml_per_barrel}])
+                    connection.execute(sqlalchemy.text("INSERT INTO ml_ledger (type, change) VALUES ('dark', :barrel_ml)"),[{"barrel_ml": barrel.ml_per_barrel}])
 
     print(f"barrels delievered: {barrels_delivered} order_id: {order_id}")
 
@@ -46,10 +46,17 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(wholesale_catalog)
 
     json_str = []
-    """ """
     with db.engine.begin() as connection:
-        ml = connection.execute(sqlalchemy.text("SELECT green_ml, red_ml, blue_ml, dark_ml from material_inventory")).fetchall()[0]
-        gold = connection.execute(sqlalchemy.text("SELECT gold from material_inventory")).scalar_one()
+        db_delta = connection.execute(sqlalchemy.text('''
+                                (SELECT COALESCE(SUM(change), 0) FROM ml_ledger WHERE type = 'red') UNION ALL
+                                (SELECT COALESCE(SUM(change), 0) FROM ml_ledger WHERE type = 'green') UNION ALL
+                                (SELECT COALESCE(SUM(change), 0) FROM ml_ledger WHERE type = 'blue') UNION ALL
+                                (SELECT COALESCE(SUM(change), 0) FROM ml_ledger WHERE type = 'dark')                                
+                                ''')).fetchall()
+        ml = []
+        for color in db_delta:
+            ml.append(color[0])
+        gold = connection.execute(sqlalchemy.text("SELECT COALESCE(SUM(change), 0) FROM gold_ledger")).scalar_one()
         for barrel in wholesale_catalog:
             if barrel.sku == "SMALL_GREEN_BARREL" and ml[0] <= 250 and gold >= barrel.price:
                 print(ml, barrel.sku, barrel.price)
@@ -63,7 +70,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 print(ml, barrel.sku, barrel.price)
                 json_str.append({"sku": "SMALL_BLUE_BARREL","quantity": max(1, gold//250)}) 
                 gold -= barrel.price 
-
     
     return json_str
 

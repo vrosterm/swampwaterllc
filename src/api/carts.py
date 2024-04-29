@@ -124,18 +124,17 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     revenue = 0
     potion_total = 0
     with db.engine.begin() as connection:
-        num = connection.execute(sqlalchemy.text('''SELECT cart_items.quantity, price FROM cart_items
-                                                JOIN potion_inventory ON item_id = potion_inventory.id
-                                                WHERE customer_id = :cart_id
-                                                '''),[{"cart_id": cart_id}]).fetchall()
-        print(num)
-        for tuple in num:
-            revenue += tuple[0]*tuple[1]
-            potion_total += tuple[0]
-        connection.execute(sqlalchemy.text("""UPDATE material_inventory SET gold = gold + :revenue"""),[{"revenue": revenue}])
-        connection.execute(sqlalchemy.text('''UPDATE potion_inventory SET quantity = potion_inventory.quantity - cart_items.quantity 
-                                           FROM cart_items
-                                           WHERE cart_items.customer_id = :cart_id AND cart_items.item_id = potion_inventory.id'''),[{"cart_id": cart_id}])
+        potions_bought = connection.execute(sqlalchemy.text("""SELECT COALESCE(SUM(cart_items.quantity),0) AS total, item_id, price 
+                                                            FROM cart_items 
+                                                            JOIN potion_inventory ON potion_inventory.id = item_id
+                                                            WHERE customer_id = :cart_id
+                                                            GROUP BY item_id, price"""),[{"cart_id": cart_id}]).fetchall()
+        for potion in potions_bought:
+            potion_total += potion.total
+            revenue += potion.total * potion.price
+            connection.execute(sqlalchemy.text("""INSERT INTO potion_ledger (potion_id, change) VALUES (:item_id, :total)"""),[{"item_id": potion.item_id, "total": potion.total*-1}])
+        connection.execute(sqlalchemy.text("""INSERT INTO gold_ledger (change) VALUES (:revenue)"""),[{"revenue": revenue}])
+
 
 
 

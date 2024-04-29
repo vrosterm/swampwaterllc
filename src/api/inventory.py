@@ -16,11 +16,9 @@ def get_inventory():
     ml_count = 0
     """ """
     with db.engine.begin() as connection:
-        potion_count = connection.execute(sqlalchemy.text("SELECT COALESCE(SUM(quantity), 0) FROM potion_inventory")).scalar_one()
-        color_ml = connection.execute(sqlalchemy.text("SELECT red_ml, green_ml, blue_ml, dark_ml FROM material_inventory")).fetchall()[0]
-        for ml in color_ml:
-            ml_count += ml
-        gold = connection.execute(sqlalchemy.text("SELECT gold FROM material_inventory")).scalar_one()
+        potion_count = connection.execute(sqlalchemy.text("SELECT COALESCE(SUM(change), 0) FROM potion_ledger")).scalar_one()
+        ml_count = connection.execute(sqlalchemy.text("SELECT COALESCE(SUM(change),0) FROM ml_ledger")).scalar_one()
+        gold = connection.execute(sqlalchemy.text("SELECT COALESCE(SUM(change),0) FROM gold_ledger")).scalar_one()
     
     return {"number_of_potions": potion_count, "ml_in_barrels": ml_count, "gold": gold}
 
