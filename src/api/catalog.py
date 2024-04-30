@@ -18,15 +18,16 @@ def get_catalog():
 
         json_str = []
     for row in in_stock:
-        json_str.append({
-                    "sku": row.sku,
-                    "name": row.potion_name,
-                    "quantity": row.total,
-                    "price": row.price,
-                    "potion_type": [row.red,
-                                    row.green,
-                                    row.blue,
-                                    row.dark]
-                })   
+        if row.total != 0:
+            json_str.append({
+                        "sku": row.sku,
+                        "name": row.potion_name,
+                        "quantity": row.total,
+                        "price": row.price,
+                        "potion_type": [row.red,
+                                        row.green,
+                                        row.blue,
+                                        row.dark]
+                    })   
     print(json_str)
     return json_str
