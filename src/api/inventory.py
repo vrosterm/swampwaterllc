@@ -13,7 +13,6 @@ router = APIRouter(
 
 @router.get("/audit")
 def get_inventory():
-    ml_count = 0
     """ """
     with db.engine.begin() as connection:
         potion_count = connection.execute(sqlalchemy.text("SELECT COALESCE(SUM(change), 0) FROM potion_ledger")).scalar_one()
@@ -29,10 +28,24 @@ def get_capacity_plan():
     Start with 1 capacity for 50 potions and 1 capacity for 10000 ml of potion. Each additional 
     capacity unit costs 1000 gold.
     """
+    potion_cap_purchase = 0
+    ml_cap_purchase = 0
+    with db.engine.begin() as connection:
+        potion_count = connection.execute(sqlalchemy.text("SELECT COALESCE(SUM(change), 0) FROM potion_ledger")).scalar_one()
+        ml_count = connection.execute(sqlalchemy.text("SELECT COALESCE(SUM(change),0) FROM ml_ledger")).scalar_one()
+        gold = connection.execute(sqlalchemy.text("SELECT COALESCE(SUM(change),0) FROM gold_ledger")).scalar_one()
+
+    if 50 - potion_count%50 <= 10 and gold >= 1500:
+        potion_cap_purchase += 1
+        gold -= 1000*potion_cap_purchase
+    
+    if 10000 - ml_count%10000 <= 1000 and gold >= 1500:
+        ml_cap_purchase += 1 
+
 
     return {
-        "potion_capacity": 0,
-        "ml_capacity": 0
+        "potion_capacity": potion_cap_purchase,
+        "ml_capacity": ml_cap_purchase
         }
 
 class CapacityPurchase(BaseModel):

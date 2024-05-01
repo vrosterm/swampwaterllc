@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from src.api import auth
 import sqlalchemy
 from src import database as db
+import math
 metadata_obj = sqlalchemy.MetaData()
 router = APIRouter(
     prefix="/bottler",
@@ -31,6 +32,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                                                INSERT INTO potion_ledger (potion_id, change, description) 
                                                VALUES(:match , :quantity, 'from mix')"""),[{"quantity": potion.quantity, "match": match}])   
             i = 0
+            # Add subtractions to ml ledger, with the type provided by color_dict. It's not really a dict, but I don't care...
             while i < len(color_dict):
                 ml = potion.potion_type[i]
                 color = color_dict[i]
@@ -49,6 +51,7 @@ def get_bottle_plan():
     """
     metadata_obj = sqlalchemy.MetaData()
     potion_inventory = sqlalchemy.Table("potion_inventory", metadata_obj, autoload_with= db.engine) 
+    json = []
 
     # Each bottle has a quantity of what proportion of red, blue, and
     # green potion to add.
@@ -66,59 +69,21 @@ def get_bottle_plan():
         for color in db_delta:
             ml.append(color[0])      
         print(ml)  
-        quantity_dict = {}
-        json = []
-        potions = connection.execute(sqlalchemy.text("""
-                                    SELECT sku, COALESCE(SUM(change),0) AS quantity, red, green, blue, dark
-                                    FROM potion_ledger
-                                    RIGHT JOIN potion_inventory ON potion_ledger.potion_id = potion_inventory.id
-                                    GROUP BY sku, red, green, blue, dark
-                                    """)).fetchall()
-        for row in potions:
-            quantity_dict[row.sku] = ([row.red, row.green, row.blue, row.dark], row.quantity)
-        print(quantity_dict)
-        # Swamp Water
-        if ml[0] >= 150 and ml[1] >= 150 and quantity_dict["SWAMP_WATER_0"][1] < 3: 
-            json.append({
-                "potion_type": quantity_dict["SWAMP_WATER_0"][0],
-                "quantity": 3
-            })
-            ml = [m - p*3 for m, p in zip(ml, quantity_dict["SWAMP_WATER_0"][0])]
-
-        # Violet
-        if ml[0] >= 150 and ml[2] >= 150 and quantity_dict["VIOLET_POTION_0"][1] < 3: 
-            json.append({
-                "potion_type": quantity_dict["VIOLET_POTION_0"][0],
-                "quantity": 3
-            })
-            ml = [m - p*3 for m, p in zip(ml, quantity_dict["VIOLET_POTION_0"][0])]
-        # Red
-        if ml[0] >= 100 and quantity_dict["RED_POTION_0"][1] < 5:
-            q = ml[0]//200
-            if q > 0:
+        potions = connection.execute(sqlalchemy.text("SELECT red, green, blue, dark, th_red, th_green, th_blue, th_dark FROM potion_inventory"))
+        for potion in potions:
+            # Compare the minimum ml needed before you start making potions, and the actual ml needed to make at least one.
+            threshold = [potion.th_red, potion.th_green, potion.th_blue, potion.th_dark]
+            potion_type = [potion.red, potion.green, potion.blue, potion.dark]
+            print(ml, threshold, [m >= t for m,t in zip(ml, threshold)])
+            if all([m >= t for m,t in zip(ml, threshold)]):
+                # In layman's terms, find the ml color that's needed with the least amount stored, and int divide by the maximum color ml needed to make at least one potion
+                # which is inflated by 1.5. That way, no negative ml occurs, and there's always a little left over for the next batch.
+                q = min([m for m in ml if threshold[ml.index(m)] != 0])//math.floor(1.5*max(potion_type))
                 json.append({
-                    "potion_type": quantity_dict["RED_POTION_0"][0],
-                    "quantity": q
+                    "potion_type": potion_type,
+                    "quantity": min(1, q)
                 })
-            ml = [m - p*q for m, p in zip(ml, quantity_dict["RED_POTION_0"][0])]
-        # Green
-        if ml[1] >= 100 and quantity_dict["GREEN_POTION_0"][1] < 5:
-            q = ml[1]//200
-            if q > 0: 
-                json.append({
-                    "potion_type": quantity_dict["GREEN_POTION_0"][0],
-                    "quantity": q
-                })
-            ml = [m - p*q for m, p in zip(ml, quantity_dict["GREEN_POTION_0"][0])]
-        # Blue
-        if ml[2] >= 100 and quantity_dict["BLUE_POTION_0"][1] < 5:
-            q = ml[2]//200
-            if q > 0:
-                json.append({
-                    "potion_type": quantity_dict["BLUE_POTION_0"][0],
-                    "quantity": q
-                })
-            ml = [m - p*q for m, p in zip(ml, quantity_dict["BLUE_POTION_0"][0])]
+                ml = [m - p*q for m, p in zip(ml, potion_type)]
         print(json)
     return json
 if __name__ == "__main__":
