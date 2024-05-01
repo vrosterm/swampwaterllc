@@ -5,7 +5,6 @@ from src.api import auth
 import sqlalchemy
 from src import database as db
 import math
-metadata_obj = sqlalchemy.MetaData()
 router = APIRouter(
     prefix="/bottler",
     tags=["bottler"],
@@ -28,8 +27,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                                                             "green_ml": potion.potion_type[1],
                                                             "blue_ml": potion.potion_type[2],
                                                             "dark_ml": potion.potion_type[3]}]).scalar_one()
-            connection.execute(sqlalchemy.text("""
-                                               INSERT INTO potion_ledger (potion_id, change, description) 
+            connection.execute(sqlalchemy.text("""INSERT INTO potion_ledger (potion_id, change, description) 
                                                VALUES(:match , :quantity, 'from mix')"""),[{"quantity": potion.quantity, "match": match}])   
             i = 0
             # Add subtractions to ml ledger, with the type provided by color_dict. It's not really a dict, but I don't care...
@@ -49,8 +47,6 @@ def get_bottle_plan():
     """
     Go from barrel to bottle.
     """
-    metadata_obj = sqlalchemy.MetaData()
-    potion_inventory = sqlalchemy.Table("potion_inventory", metadata_obj, autoload_with= db.engine) 
     json = []
 
     # Each bottle has a quantity of what proportion of red, blue, and
@@ -67,24 +63,22 @@ def get_bottle_plan():
                                 ''')).fetchall()
         ml = []
         for color in db_delta:
-            ml.append(color[0])      
-        print(ml)  
+            ml.append(color[0])       
         potions = connection.execute(sqlalchemy.text("SELECT red, green, blue, dark, th_red, th_green, th_blue, th_dark FROM potion_inventory"))
         for potion in potions:
             # Compare the minimum ml needed before you start making potions, and the actual ml needed to make at least one.
             threshold = [potion.th_red, potion.th_green, potion.th_blue, potion.th_dark]
             potion_type = [potion.red, potion.green, potion.blue, potion.dark]
-            print(ml, threshold, [m >= t for m,t in zip(ml, threshold)])
-            if all([m >= t for m,t in zip(ml, threshold)]):
+            if all([m > t for m,t in zip(ml, threshold)]):
                 # In layman's terms, find the ml color that's needed with the least amount stored, and int divide by the maximum color ml needed to make at least one potion
                 # which is inflated by 1.5. That way, no negative ml occurs, and there's always a little left over for the next batch.
+                print([m for m in ml if threshold[ml.index(m)] != 0])
                 q = min([m for m in ml if threshold[ml.index(m)] != 0])//math.floor(1.5*max(potion_type))
                 json.append({
                     "potion_type": potion_type,
                     "quantity": min(1, q)
                 })
                 ml = [m - p*q for m, p in zip(ml, potion_type)]
-        print(json)
     return json
 if __name__ == "__main__":
     print(get_bottle_plan())
