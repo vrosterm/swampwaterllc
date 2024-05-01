@@ -30,12 +30,16 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
             connection.execute(sqlalchemy.text("""
                                                INSERT INTO potion_ledger (potion_id, change, description) 
                                                VALUES(:match , :quantity, 'from mix')"""),[{"quantity": potion.quantity, "match": match}])   
-            for ml in potion.potion_type:
-                if ml != 0:
-                    color = color_dict[potion.potion_type.index(ml)]
+            i = 0
+            while i < len(color_dict):
+                ml = potion.potion_type[i]
+                color = color_dict[i]
+                i += 1  
+                if ml > 0:
+                    print(color)
                     connection.execute(sqlalchemy.text("""INSERT INTO ml_ledger (type, change)
                                                     VALUES (:color, :ml_quantity)
-                                                        """),[{"color": color, "ml_quantity": ml*potion.quantity*-1}])                                                                      
+                                                        """),[{"color": color, "ml_quantity": ml*potion.quantity*-1}])                                                                    
     return "OK"
 
 @router.post("/plan")
@@ -60,7 +64,8 @@ def get_bottle_plan():
                                 ''')).fetchall()
         ml = []
         for color in db_delta:
-            ml.append(color[0])        
+            ml.append(color[0])      
+        print(ml)  
         quantity_dict = {}
         json = []
         potions = connection.execute(sqlalchemy.text("""
