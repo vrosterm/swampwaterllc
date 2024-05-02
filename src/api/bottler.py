@@ -69,6 +69,7 @@ def get_bottle_plan():
             # Compare the minimum ml needed before you start making potions, and the actual ml needed to make at least one.
             threshold = [potion.th_red, potion.th_green, potion.th_blue, potion.th_dark]
             potion_type = [potion.red, potion.green, potion.blue, potion.dark]
+            print([m > t for m,t in zip(ml, threshold)], ml, threshold)
             if all([m > t for m,t in zip(ml, threshold)]):
                 # In layman's terms, find the ml color that's needed with the least amount stored, and int divide by the maximum color ml needed to make at least one potion
                 # which is inflated by 1.5. That way, no negative ml occurs, and there's always a little left over for the next batch.

@@ -4,6 +4,8 @@ from src.api import auth
 from enum import Enum
 import sqlalchemy
 from src import database as db
+metadata_obj = sqlalchemy.MetaData()
+# search_view = sqlalchemy.Table("search_view", metadata_obj, autoload_with=db)
 
 router = APIRouter(
     prefix="/carts",
@@ -53,7 +55,6 @@ def search_orders(
     Your results must be paginated, the max results you can return at any
     time is 5 total line items.
     """
-
     return {
         "previous": "",
         "next": "",
@@ -87,8 +88,6 @@ def post_visits(visit_id: int, customers: list[Customer]):
 @router.post("/")
 def create_cart(new_cart: Customer):
     """ """
-    metadata_obj = sqlalchemy.MetaData()
-    carts = sqlalchemy.Table("carts", metadata_obj, autoload_with= db.engine) 
     with db.engine.begin() as connection:
         connection.execute(sqlalchemy.insert(carts),[
             {"customer_name": new_cart.customer_name,

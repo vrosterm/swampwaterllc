@@ -58,19 +58,19 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             ml.append(color[0])
         gold = connection.execute(sqlalchemy.text("SELECT COALESCE(SUM(change), 0) FROM gold_ledger")).scalar_one()
         for barrel in wholesale_catalog:
-            if barrel.sku == "SMALL_GREEN_BARREL" and ml[0] <= 250 and gold >= barrel.price:
-                print(ml, barrel.sku, barrel.price)
-                json_str.append({"sku": "SMALL_GREEN_BARREL","quantity": max(1, gold//200)})
-                gold -= barrel.price 
-            if barrel.sku == "SMALL_RED_BARREL" and ml[1] <= 250 and gold >= barrel.price:
+            if barrel.sku == "SMALL_RED_BARREL" and ml[0] <= 250 and gold >= barrel.price:
                 print(ml, barrel.sku, barrel.price)
                 json_str.append({"sku": "SMALL_RED_BARREL","quantity": max(1, gold//200)}) 
+                gold -= barrel.price 
+            if barrel.sku == "SMALL_GREEN_BARREL" and ml[1] <= 250 and gold >= barrel.price:
+                print(ml, barrel.sku, barrel.price)
+                json_str.append({"sku": "SMALL_GREEN_BARREL","quantity": max(1, gold//200)})
                 gold -= barrel.price 
             if barrel.sku == "SMALL_BLUE_BARREL" and ml[2] <= 250 and gold >= barrel.price:
                 print(ml, barrel.sku, barrel.price)
                 json_str.append({"sku": "SMALL_BLUE_BARREL","quantity": max(1, gold//200)}) 
                 gold -= barrel.price 
-            if barrel.sku == "SMALL_DARK_BARREL" and ml[2] <= 250 and gold >= barrel.price:
+            if barrel.sku == "SMALL_DARK_BARREL" and ml[3] <= 250 and gold >= barrel.price:
                 print(ml, barrel.sku, barrel.price)
                 json_str.append({"sku": "SMALL_DARK_BARREL","quantity": max(1, gold//200)}) 
                 gold -= barrel.price 
