@@ -5,7 +5,8 @@ from enum import Enum
 import sqlalchemy
 from src import database as db
 metadata_obj = sqlalchemy.MetaData()
-# search_view = sqlalchemy.Table("search_view", metadata_obj, autoload_with=db)
+search_view = sqlalchemy.Table("search_view", metadata_obj, autoload_with=db)
+carts = sqlalchemy.Table("carts", metadata_obj, autoload_with=db)
 
 router = APIRouter(
     prefix="/carts",
@@ -55,6 +56,26 @@ def search_orders(
     Your results must be paginated, the max results you can return at any
     time is 5 total line items.
     """
+
+    if sort_col is search_sort_options.customer_name:
+        order_by = search_view.c.customer_name
+    elif sort_col is search_sort_options.item_sku:
+        order_by = search_view.c.item_sku
+    elif sort_col is search_sort_options.line_item_total:
+        order_by = search_view.c.quantity
+    elif sort_col is search_sort_options.timestamp:
+        order_by = search_view.c.created_at
+    else: 
+        assert False
+
+
+    stmt = sqlalchemy.select(
+        search_view
+    )
+
+    if search_page != "":
+        stmt = stmt.limit()
+
     return {
         "previous": "",
         "next": "",
