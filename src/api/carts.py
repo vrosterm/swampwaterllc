@@ -85,7 +85,7 @@ def search_orders(
         stmt = stmt.where(db.search_view.c.customer_name.ilike(f"{customer_name}"))
 
     if potion_sku != "":
-        stmt = stmt.where(db.search_view.c.potion_sku.ilike(f"{potion_sku}"))
+        stmt = stmt.where(db.search_view.c.item_sku.ilike(f"{potion_sku}"))
 
     json = []
     with db.engine.begin() as connection:
