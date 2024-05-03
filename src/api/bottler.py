@@ -73,12 +73,13 @@ def get_bottle_plan():
                 # In layman's terms, find the ml color that's needed with the least amount stored, and int divide by the maximum color ml needed to make at least one potion
                 # which is inflated by 1.5. That way, no negative ml occurs, and there's always a little left over for the next batch.
                 print([m for m in ml if threshold[ml.index(m)] != 0 and m != 0])
-                q = min([m for m in ml if threshold[ml.index(m)] and m != 0])//math.floor(1.5*max(potion_type))
-                json.append({
-                    "potion_type": potion_type,
-                    "quantity": max(1, q)
-                })
-                ml = [m - p*q for m, p in zip(ml, potion_type)]
+                q = min([m for m in ml if (threshold[ml.index(m)] and m != 0)])//math.floor(1.5*max(potion_type))
+                if q != 0:
+                    json.append({
+                        "potion_type": potion_type,
+                        "quantity": q
+                    })
+                    ml = [m - p*q for m, p in zip(ml, potion_type)]
     return json
 if __name__ == "__main__":
     print(get_bottle_plan())
