@@ -4,9 +4,6 @@ from src.api import auth
 from enum import Enum
 import sqlalchemy
 from src import database as db
-metadata_obj = sqlalchemy.MetaData()
-search_view = sqlalchemy.Table("search_view", metadata_obj, autoload_with=db)
-carts = sqlalchemy.Table("carts", metadata_obj, autoload_with=db)
 
 router = APIRouter(
     prefix="/carts",
@@ -58,36 +55,65 @@ def search_orders(
     """
 
     if sort_col is search_sort_options.customer_name:
-        order_by = search_view.c.customer_name
+        order_by = db.search_view.c.customer_name
     elif sort_col is search_sort_options.item_sku:
-        order_by = search_view.c.item_sku
+        order_by = db.search_view.c.item_sku
     elif sort_col is search_sort_options.line_item_total:
-        order_by = search_view.c.quantity
+        order_by = db.search_view.c.quantity
     elif sort_col is search_sort_options.timestamp:
-        order_by = search_view.c.created_at
+        order_by = db.search_view.c.created_at
     else: 
         assert False
 
+    if sort_order is search_sort_order.asc:
+        order_by = order_by.asc()
+    else:
+        order_by = order_by.desc() 
 
-    stmt = sqlalchemy.select(
-        search_view
+    if search_page == "":
+        offset = 0
+    else: 
+        offset = int(search_page)
+
+    stmt = (sqlalchemy.select(db.search_view)
+    .limit(5)
+    .offset(5*offset)
+    .order_by(order_by)
     )
 
-    if search_page != "":
-        stmt = stmt.limit()
+    if customer_name != "":
+        stmt = stmt.where(db.search_view.c.customer_name.ilike(f"{customer_name}"))
+
+    if potion_sku != "":
+        stmt = stmt.where(db.search_view.c.potion_sku.ilike(f"{potion_sku}"))
+
+    json = []
+    with db.engine.begin() as connection:
+        result = connection.execute(stmt)
+        for row in result:
+            json.append(
+                {
+                "line_item_id": row.customer_id,
+                "item_sku": row.item_sku,
+                "customer_name": row.customer_name,
+                "line_item_total": row.gold,
+                "timestamp": row.created_at,
+                }
+            )
+
+        if offset-1 < 0:
+            previous = ""
+        else:
+            previous = str(offset-1)
+        if offset+1 >= connection.execute(sqlalchemy.select(sqlalchemy.func.count()).select_from(db.search_view)).scalar_one()//5:
+            next = ""
+        else:
+            next = str(offset+1)
 
     return {
-        "previous": "",
-        "next": "",
-        "results": [
-            {
-                "line_item_id": 1,
-                "item_sku": "1 oblivion potion",
-                "customer_name": "Scaramouche",
-                "line_item_total": 50,
-                "timestamp": "2021-01-01T00:00:00Z",
-            }
-        ],
+        "previous": previous,
+        "next": next,
+        "results": json,
     }
 
 
@@ -110,7 +136,7 @@ def post_visits(visit_id: int, customers: list[Customer]):
 def create_cart(new_cart: Customer):
     """ """
     with db.engine.begin() as connection:
-        connection.execute(sqlalchemy.insert(carts),[
+        connection.execute(sqlalchemy.insert(db.carts),[
             {"customer_name": new_cart.customer_name,
              "customer_class": new_cart.character_class,
              "level": new_cart.level}
