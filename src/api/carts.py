@@ -82,10 +82,10 @@ def search_orders(
     )
 
     if customer_name != "":
-        stmt = stmt.where(db.search_view.c.customer_name.contains(f"{customer_name}"))
+        stmt = stmt.where(db.search_view.c.customer_name.ilike(f"%{customer_name}%"))
 
     if potion_sku != "":
-        stmt = stmt.where(db.search_view.c.item_sku.ilike(f"{potion_sku}"))
+        stmt = stmt.where(db.search_view.c.item_sku.ilike(f"%{potion_sku}%"))
 
     json = []
     offset_max = 0
