@@ -88,9 +88,10 @@ def search_orders(
         stmt = stmt.where(db.search_view.c.item_sku.ilike(f"%{potion_sku}%"))
 
     json = []
-    offset_max = 0
     with db.engine.begin() as connection:
         result = connection.execute(stmt)
+        offset_max = connection.execute(sqlalchemy.text("SELECT COUNT(customer_id) FROM search_view")).scalar_one()//5
+        print(offset_max)
         for row in result:
             json.append(
                 {
@@ -101,12 +102,11 @@ def search_orders(
                 "timestamp": row.created_at,
                 }
             )
-            offset_max += 1
     if offset-1 < 0:
         previous = ""
     else:
         previous = str(offset-1)
-    if offset+1 >= offset_max:
+    if offset+1 > offset_max:
         next = ""
     else:
         next = str(offset+1)
