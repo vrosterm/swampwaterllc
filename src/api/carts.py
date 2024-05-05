@@ -137,11 +137,11 @@ def post_visits(visit_id: int, customers: list[Customer]):
 def create_cart(new_cart: Customer):
     """ """
     with db.engine.begin() as connection:
-        connection.execute(sqlalchemy.insert(db.carts),[
+        connection.execute(sqlalchemy.text("INSERT INTO carts (customer_name, customer_class, level) VALUES (:customer_name, :customer_class, :level)"),[
             {"customer_name": new_cart.customer_name,
              "customer_class": new_cart.character_class,
              "level": new_cart.level}
-        ],)
+        ])
         return {"cart_id": connection.execute(sqlalchemy.text("SELECT MAX(ID) from carts")).scalar_one()}
 
 

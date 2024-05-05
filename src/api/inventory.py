@@ -42,7 +42,7 @@ def get_capacity_plan():
     if 10000 - ml_count%10000 <= 1000 and gold >= 1500:
         ml_cap_purchase += 1 
 
-
+    
     return {
         "potion_capacity": potion_cap_purchase,
         "ml_capacity": ml_cap_purchase
@@ -59,5 +59,9 @@ def deliver_capacity_plan(capacity_purchase : CapacityPurchase, order_id: int):
     Start with 1 capacity for 50 potions and 1 capacity for 10000 ml of potion. Each additional 
     capacity unit costs 1000 gold.
     """
+
+    with db.engine.begin() as connection:
+        connection.execute(sqlalchemy.insert(db.gold_ledger).values(change = (capacity_purchase.potion_capacity + capacity_purchase.ml_capacity)*1000*-1,
+                                                                    description = "Bought capacity"))
 
     return "OK"

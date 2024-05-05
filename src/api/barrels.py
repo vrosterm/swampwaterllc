@@ -41,40 +41,78 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
 
 # Gets called once a day
 # Used to set purchase logic 
+
+class barrelSizer:
+    def __init__(self, gold: int, size: str = ''):
+        self.gold = gold
+        self.size = size
+    def quantity(self):
+        if self.size == 'SMALL' and self.gold >= 100:
+            return max(1, self.gold//200)
+        elif self.size == 'MEDIUM' and self.gold >= 750:
+            return max(1, self.gold//500)
+        elif self.size == 'LARGE' and self.gold >= 1500:
+            return max(1, self.gold//750)
+        else: 
+            return 0
+
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
-    print(wholesale_catalog)
-
+    wholesale_alias = wholesale_catalog
     json_str = []
     with db.engine.begin() as connection:
         db_delta = connection.execute(sqlalchemy.text('''
-                                (SELECT COALESCE(SUM(change), 0) FROM ml_ledger WHERE type = 'red') UNION ALL
-                                (SELECT COALESCE(SUM(change), 0) FROM ml_ledger WHERE type = 'green') UNION ALL
-                                (SELECT COALESCE(SUM(change), 0) FROM ml_ledger WHERE type = 'blue') UNION ALL
-                                (SELECT COALESCE(SUM(change), 0) FROM ml_ledger WHERE type = 'dark')                                
-                                ''')).fetchall()
+                                                      SELECT COALESCE(SUM(change), 0) FROM ml_ledger WHERE type = 'red' UNION ALL
+                                                      SELECT COALESCE(SUM(change), 0) FROM ml_ledger WHERE type = 'green' UNION ALL
+                                                      SELECT COALESCE(SUM(change), 0) FROM ml_ledger WHERE type = 'blue' UNION ALL
+                                                      SELECT COALESCE(SUM(change), 0) FROM ml_ledger WHERE type = 'dark'                                                     
+                                                      ''')).fetchall()
         ml = []
         for color in db_delta:
             ml.append(color[0])
         gold = connection.execute(sqlalchemy.text("SELECT COALESCE(SUM(change), 0) FROM gold_ledger")).scalar_one()
-        for barrel in wholesale_catalog:
-            if barrel.sku == "SMALL_RED_BARREL" and ml[0] <= 250 and gold >= barrel.price:
+        barrel_sizer = barrelSizer(gold)
+        wholesale_alias.sort(key=lambda x: x.ml_per_barrel, reverse=True)
+        print(wholesale_alias)
+        for barrel in wholesale_alias:
+            barrel_sizer.size = barrel.sku.split('_')[0]
+            if barrel.sku == barrel_sizer.size + "_RED_BARREL" and ml[0] <= 250  and barrel_sizer.quantity() > 0:
                 print(ml, barrel.sku, barrel.price)
-                json_str.append({"sku": "SMALL_RED_BARREL","quantity": max(1, gold//200)}) 
-                gold -= barrel.price 
-            if barrel.sku == "SMALL_GREEN_BARREL" and ml[1] <= 250 and gold >= barrel.price:
+                json_str.append({"sku": barrel.sku, "quantity": barrel_sizer.quantity()}) 
+                barrel_sizer.gold -= barrel.price*barrel_sizer.quantity()
+                ml[0] += barrel.ml_per_barrel
+            if barrel.sku == barrel_sizer.size + "_GREEN_BARREL" and ml[1] <= 250  and barrel_sizer.quantity() > 0:
                 print(ml, barrel.sku, barrel.price)
-                json_str.append({"sku": "SMALL_GREEN_BARREL","quantity": max(1, gold//200)})
-                gold -= barrel.price 
-            if barrel.sku == "SMALL_BLUE_BARREL" and ml[2] <= 250 and gold >= barrel.price:
+                json_str.append({"sku": barrel.sku, "quantity": barrel_sizer.quantity()}) 
+                barrel_sizer.gold -= barrel.price*barrel_sizer.quantity()
+                ml[1] += barrel.ml_per_barrel
+            if barrel.sku == barrel_sizer.size + "_BLUE_BARREL" and ml[2] <= 250  and barrel_sizer.quantity() > 0:
                 print(ml, barrel.sku, barrel.price)
-                json_str.append({"sku": "SMALL_BLUE_BARREL","quantity": max(1, gold//200)}) 
-                gold -= barrel.price 
-            if barrel.sku == "SMALL_DARK_BARREL" and ml[3] <= 250 and gold >= barrel.price:
+                json_str.append({"sku": barrel.sku, "quantity": barrel_sizer.quantity()}) 
+                barrel_sizer.gold -= barrel.price*barrel_sizer.quantity()
+                ml[2] += barrel.ml_per_barrel
+            if barrel.sku == barrel_sizer.size + "_DARK_BARREL" and ml[3] <= 250  and barrel_sizer.quantity() > 0:
                 print(ml, barrel.sku, barrel.price)
-                json_str.append({"sku": "SMALL_DARK_BARREL","quantity": max(1, gold//200)}) 
-                gold -= barrel.price 
-    
+                json_str.append({"sku": barrel.sku, "quantity": barrel_sizer.quantity()}) 
+                barrel_sizer.gold -= barrel.price*barrel_sizer.quantity()
+                ml[3] += barrel.ml_per_barrel
+            '''
+            if barrel.sku == barrel_sizer.size() + "_GREEN_BARREL" and ml[1] <= 250  and gold >= barrel.price:
+                print(ml, barrel.sku, barrel.price)
+                json_str.append({"sku": barrel_sizer.size() + "_GREEN_BARREL","quantity": barrel_sizer.quantity()}) 
+                barrel_sizer.gold -= barrel.price*barrel_sizer.quantity()
+                ml[1] += barrel.ml_per_barrel
+            if barrel.sku == barrel_sizer.size() + "_BLUE_BARREL" and ml[2] <= 250  and gold >= barrel.price:
+                print(ml, barrel.sku, barrel.price)
+                json_str.append({"sku": barrel_sizer.size() + "_BLUE_BARREL","quantity": barrel_sizer.quantity()}) 
+                barrel_sizer.gold -= barrel.price*barrel_sizer.quantity()
+                ml[2] += barrel.ml_per_barrel
+            if barrel.sku == barrel_sizer.size() + "_DARK_BARREL" and ml[3] <= 250  and gold >= barrel.price:
+                print(ml, barrel.sku, barrel.price)
+                json_str.append({"sku": barrel_sizer.size() + "_DARK_BARREL","quantity": barrel_sizer.quantity()}) 
+                barrel_sizer.gold -= barrel.price*barrel_sizer.quantity()
+                ml[3] += barrel.ml_per_barrel
+                '''
     return json_str
 
         
