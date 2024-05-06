@@ -76,7 +76,7 @@ def search_orders(
         offset = int(search_page)
 
     stmt = (sqlalchemy.select(db.search_view)
-    .limit(5)
+    .limit(6)
     .offset(5*offset)
     .order_by(order_by)
     )
@@ -90,8 +90,6 @@ def search_orders(
     json = []
     with db.engine.begin() as connection:
         result = connection.execute(stmt)
-        offset_max = connection.execute(sqlalchemy.text("SELECT COUNT(customer_id) FROM search_view")).scalar_one()//5
-        print(offset_max)
         for row in result:
             json.append(
                 {
@@ -106,15 +104,15 @@ def search_orders(
         previous = ""
     else:
         previous = str(offset-1)
-    if offset+1 > offset_max:
-        next = ""
-    else:
+    if len(json) > 5:
         next = str(offset+1)
+    else:
+        next = ""
 
     return {
         "previous": previous,
         "next": next,
-        "results": json,
+        "results": json[:5],
     }
 
 

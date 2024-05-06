@@ -96,23 +96,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 json_str.append({"sku": barrel.sku, "quantity": barrel_sizer.quantity()}) 
                 barrel_sizer.gold -= barrel.price*barrel_sizer.quantity()
                 ml[3] += barrel.ml_per_barrel
-            '''
-            if barrel.sku == barrel_sizer.size() + "_GREEN_BARREL" and ml[1] <= 250  and gold >= barrel.price:
-                print(ml, barrel.sku, barrel.price)
-                json_str.append({"sku": barrel_sizer.size() + "_GREEN_BARREL","quantity": barrel_sizer.quantity()}) 
-                barrel_sizer.gold -= barrel.price*barrel_sizer.quantity()
-                ml[1] += barrel.ml_per_barrel
-            if barrel.sku == barrel_sizer.size() + "_BLUE_BARREL" and ml[2] <= 250  and gold >= barrel.price:
-                print(ml, barrel.sku, barrel.price)
-                json_str.append({"sku": barrel_sizer.size() + "_BLUE_BARREL","quantity": barrel_sizer.quantity()}) 
-                barrel_sizer.gold -= barrel.price*barrel_sizer.quantity()
-                ml[2] += barrel.ml_per_barrel
-            if barrel.sku == barrel_sizer.size() + "_DARK_BARREL" and ml[3] <= 250  and gold >= barrel.price:
-                print(ml, barrel.sku, barrel.price)
-                json_str.append({"sku": barrel_sizer.size() + "_DARK_BARREL","quantity": barrel_sizer.quantity()}) 
-                barrel_sizer.gold -= barrel.price*barrel_sizer.quantity()
-                ml[3] += barrel.ml_per_barrel
-                '''
+            print(gold)
     return json_str
 
         
