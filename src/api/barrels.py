@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from src.api import auth
 import sqlalchemy
+import math
 from src import database as db
 
 router = APIRouter(
@@ -46,13 +47,13 @@ class barrelSizer:
     def __init__(self, gold: int, size: str = ''):
         self.gold = gold
         self.size = size
-    def quantity(self):
+    def quantity(self, price: int):
         if self.size == 'SMALL' and self.gold >= 100:
-            return max(1, self.gold//200)
+            return max(1, self.gold//math.floor(1.5*price))
         elif self.size == 'MEDIUM' and self.gold >= 750:
-            return max(1, self.gold//500)
+            return max(1, self.gold//math.floor(2*price))
         elif self.size == 'LARGE' and self.gold >= 1500:
-            return max(1, self.gold//750)
+            return max(1, self.gold//math.floor(2.5*price))
         else: 
             return 0
 
@@ -76,25 +77,26 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         print(wholesale_alias)
         for barrel in wholesale_alias:
             barrel_sizer.size = barrel.sku.split('_')[0]
-            if barrel.sku == barrel_sizer.size + "_RED_BARREL" and ml[0] <= 250  and barrel_sizer.quantity() > 0:
+            q = barrel_sizer.quantity(barrel.price)
+            if barrel.sku == barrel_sizer.size + "_RED_BARREL" and ml[0] <= 250 and q > 0:
                 print(ml, barrel.sku, barrel.price)
-                json_str.append({"sku": barrel.sku, "quantity": barrel_sizer.quantity()}) 
-                barrel_sizer.gold -= barrel.price*barrel_sizer.quantity()
+                json_str.append({"sku": barrel.sku, "quantity": q}) 
+                barrel_sizer.gold -= barrel.price*q
                 ml[0] += barrel.ml_per_barrel
-            if barrel.sku == barrel_sizer.size + "_GREEN_BARREL" and ml[1] <= 250  and barrel_sizer.quantity() > 0:
+            if barrel.sku == barrel_sizer.size + "_GREEN_BARREL" and ml[1] <= 250 and q > 0:
                 print(ml, barrel.sku, barrel.price)
-                json_str.append({"sku": barrel.sku, "quantity": barrel_sizer.quantity()}) 
-                barrel_sizer.gold -= barrel.price*barrel_sizer.quantity()
+                json_str.append({"sku": barrel.sku, "quantity": q}) 
+                barrel_sizer.gold -= barrel.price*q
                 ml[1] += barrel.ml_per_barrel
-            if barrel.sku == barrel_sizer.size + "_BLUE_BARREL" and ml[2] <= 250  and barrel_sizer.quantity() > 0:
+            if barrel.sku == barrel_sizer.size + "_BLUE_BARREL" and ml[2] <= 250 and q > 0:
                 print(ml, barrel.sku, barrel.price)
-                json_str.append({"sku": barrel.sku, "quantity": barrel_sizer.quantity()}) 
-                barrel_sizer.gold -= barrel.price*barrel_sizer.quantity()
+                json_str.append({"sku": barrel.sku, "quantity": q}) 
+                barrel_sizer.gold -= barrel.price*q
                 ml[2] += barrel.ml_per_barrel
-            if barrel.sku == barrel_sizer.size + "_DARK_BARREL" and ml[3] <= 250  and barrel_sizer.quantity() > 0:
+            if barrel.sku == barrel_sizer.size + "_DARK_BARREL" and ml[3] <= 250 and q > 0:
                 print(ml, barrel.sku, barrel.price)
-                json_str.append({"sku": barrel.sku, "quantity": barrel_sizer.quantity()}) 
-                barrel_sizer.gold -= barrel.price*barrel_sizer.quantity()
+                json_str.append({"sku": barrel.sku, "quantity": q}) 
+                barrel_sizer.gold -= barrel.price*q
                 ml[3] += barrel.ml_per_barrel
             print(gold)
     return json_str
