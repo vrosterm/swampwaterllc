@@ -73,11 +73,11 @@ def get_bottle_plan():
         for color in db_delta:
             ml.append(color[0])       
 
-        potions = connection.execute(sqlalchemy.text("SELECT red, green, blue, dark, th_red, th_green, th_blue, th_dark FROM potion_inventory"))
+        potions = connection.execute(sqlalchemy.text("SELECT red, green, blue, dark, th_red, th_green, th_blue, th_dark FROM potion_inventory ORDER by priority"))
         for potion in potions:
             # Compare the minimum ml needed before you start making potions, and the actual ml needed to make at least one.
-            threshold = [potion.th_red, potion.th_green, potion.th_blue, potion.th_dark]
             potion_type = [potion.red, potion.green, potion.blue, potion.dark]
+            threshold = [potion.th_red, potion.th_green, potion.th_blue, potion.th_dark]
             if all([m >= t for m,t in zip(ml, threshold)]):
                 # In layman's terms, find the ml color that's needed with the least amount stored, and int divide by the maximum color ml needed to make at least one potion
                 # which is inflated by 1.5. That way, no negative ml occurs, and there's always a little left over for the next batch.

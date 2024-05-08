@@ -50,9 +50,9 @@ class barrelSizer:
     def quantity(self, price: int):
         if self.size == 'SMALL' and self.gold >= price:
             return max(1, self.gold//math.floor(1.5*price))
-        elif self.size == 'MEDIUM' and self.gold >= 750:
+        elif self.size == 'MEDIUM' and self.gold >= (math.floor(1.25*price)):
             return max(1, self.gold//math.floor(2*price))
-        elif self.size == 'LARGE' and self.gold >= 1500:
+        elif self.size == 'LARGE' and self.gold >= (math.floor(1.5*price)):
             return max(1, self.gold//math.floor(2.5*price))
         else: 
             return 0
