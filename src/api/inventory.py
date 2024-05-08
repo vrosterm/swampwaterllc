@@ -35,12 +35,13 @@ def get_capacity_plan():
         ml_count = connection.execute(sqlalchemy.text("SELECT COALESCE(SUM(change),0) FROM ml_ledger")).scalar_one()
         gold = connection.execute(sqlalchemy.text("SELECT COALESCE(SUM(change),0) FROM gold_ledger")).scalar_one()
 
-    if 50 - potion_count%50 <= 10 and gold >= 1500:
-        potion_cap_purchase += 1
-        gold -= 1000*potion_cap_purchase
-    
-    if 10000 - ml_count%10000 <= 1000 and gold >= 1500:
+    if gold >= 1000:
         ml_cap_purchase += 1 
+        gold -= 1000*ml_cap_purchase
+
+    if gold >= 1000:
+        potion_cap_purchase += 1
+    
 
     
     return {
@@ -61,7 +62,11 @@ def deliver_capacity_plan(capacity_purchase : CapacityPurchase, order_id: int):
     """
 
     with db.engine.begin() as connection:
-        connection.execute(sqlalchemy.insert(db.gold_ledger).values(change = (capacity_purchase.potion_capacity + capacity_purchase.ml_capacity)*1000*-1,
-                                                                    description = "Bought capacity"))
+        if capacity_purchase.potion_capacity > 0:
+            connection.execute(sqlalchemy.insert(db.gold_ledger).values(change = (capacity_purchase.potion_capacity)*1000*-1,
+                                                                    description = "Bought potion capacity"))
+        if capacity_purchase.ml_capacity > 0:
+            connection.execute(sqlalchemy.insert(db.gold_ledger).values(change = (capacity_purchase.ml_capacity)*1000*-1,
+                                                                    description = "Bought ml capacity"))            
 
     return "OK"
