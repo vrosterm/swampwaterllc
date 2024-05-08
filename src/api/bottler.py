@@ -73,7 +73,7 @@ def get_bottle_plan():
         for color in db_delta:
             ml.append(color[0])       
 
-        potions = connection.execute(sqlalchemy.text("SELECT red, green, blue, dark, th_red, th_green, th_blue, th_dark FROM potion_inventory ORDER by priority"))
+        potions = connection.execute(sqlalchemy.text("SELECT red, green, blue, dark, th_red, th_green, th_blue, th_dark FROM potion_inventory ORDER by priority asc"))
         for potion in potions:
             # Compare the minimum ml needed before you start making potions, and the actual ml needed to make at least one.
             potion_type = [potion.red, potion.green, potion.blue, potion.dark]
